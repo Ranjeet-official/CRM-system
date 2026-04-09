@@ -1,0 +1,64 @@
+<x-app-layout>
+    <div
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+        <div class="p-6">
+            <form action="{{ route('clients.update', $client->id) }}" method="POST">
+                @method('PUT')
+                @csrf
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-6 col-span-2">
+                        <h3
+                            class="text-lg font-medium text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-2">
+                            Edit Client</h3>
+                    </div>
+
+                    <div>
+                        <x-input label="Contact Name" name="contact_name" placeholder="Enter contact name"
+                            value="{{ $client->contact_name }}" />
+                    </div>
+                    <div>
+                        <x-input label="Contact Email" name="contact_email" placeholder="Enter contact email"
+                            value="{{ $client->contact_email }}" />
+                    </div>
+                    <div>
+                        <x-input label="Contact Phone Number" name="contact_phone"
+                            placeholder="Enter contact phone number" value="{{ $client->contact_phone_number }}" />
+                    </div>
+                    <div>
+                        <x-input label="Company Name" name="company_name" placeholder="Enter company name"
+                            value="{{ $client->company_name }}" />
+                    </div>
+                    <div>
+                        <x-input label="Company Address" name="company_address"
+                            placeholder="Enter company address" value="{{ $client->company_address }}" />
+                    </div>
+                    <div>
+                        <x-input label="Company City" name="company_city" placeholder="Enter company city"
+                            value="{{ $client->company_city }}" />
+                    </div>
+                    <div>
+                        <x-input label="Company Zip" name="company_zip" placeholder="Enter company zip"
+                            value="{{ $client->company_zip }}" />
+                    </div>
+                    <div>
+                        <x-input label="Company VAT" name="company_vat" placeholder="Enter company vat"
+                            value="{{ $client->company_vat }}" />
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="mt-8 pt-5 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-end space-x-3">
+                        <a href="{{ route('clients.index') }}"
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Cancel
+                        </a>
+                        <x-button type="primary" tag="button" buttonType="submit">
+                            Update Client
+                        </x-button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</x-app-layout>
