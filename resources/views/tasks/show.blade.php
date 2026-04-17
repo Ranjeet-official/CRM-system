@@ -1,5 +1,6 @@
-<x-app-layout>
-    <div
+@extends('layouts.app')
+
+@section('content')    <div
         class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
         <div class="p-6">
             <!-- Header with Task Title and Actions -->
@@ -329,4 +330,4 @@
             @endif
         </div>
     </div>
-</x-app-layout>
+@endsection

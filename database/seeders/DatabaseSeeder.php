@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
 
         // ✅ Permissions
         Permission::firstOrCreate(['name' => 'manage users']);
+        Permission::firstOrCreate(['name' => 'manager activity']);
         Permission::firstOrCreate(['name' => 'delete']);
         Permission::firstOrCreate(['name' => 'add task']);
 
@@ -25,7 +26,7 @@ class DatabaseSeeder extends Seeder
         $adminRole = Role::firstOrCreate(['name' => 'admin']);
         $userRole  = Role::firstOrCreate(['name' => 'user']);
 
-        $adminRole->givePermissionTo(['manage users', 'delete','add task']);
+        $adminRole->givePermissionTo(['manage users', 'delete','add task','manager activity']);
 
         // ✅ Admin
         $admin = User::firstOrCreate(
@@ -39,8 +40,8 @@ class DatabaseSeeder extends Seeder
         $admin->assignRole('admin');
 
 
-        // User::factory()->count(10)->create();
-        Client::factory()->count(30)->create();
+        User::factory()->count(10)->create();
+        // Client::factory()->count(30)->create();
         // Project::factory()->count(15)->create();
         // Task::factory()->count(68)->create();
     }

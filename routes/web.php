@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
@@ -9,13 +12,11 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::middleware(['auth'])->group(function () {
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -30,20 +31,29 @@ Route::middleware('auth')->group(function () {
     // Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
     // Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
 
-    route::resource('clients',ClientController::class);
-    route::resource('users',UserController::class)->middleware('role:admin');
-    route::resource('tasks',TaskController::class);
-    route::resource('projects',ProjectController::class);
-    Route::patch('users/{id}/restore', [UserController::class, 'restore'])->name('users.restore')->middleware('role:admin');
+    route::resource('clients', ClientController::class);
+    Route::resource('users', UserController::class)->middleware('role:admin');
+    route::resource('tasks', TaskController::class);
+    route::resource('projects', ProjectController::class);
+    // Route::resource('')
+
+    Route::post('users/{id}/restore', [UserController::class, 'restore'])
+        ->name('users.restore');
+    Route::delete('users/{id}/force-delete', [UserController::class, 'forceDelete'])
+        ->name('users.forceDelete');
 
 
 
+    Route::get('activity', [ActivityLogController::class, 'index'])
+    ->name('activity.logs')->middleware('role:admin');
 
     Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::put('notifications/{notification}', [NotificationController::class, 'update'])->name('notifications.update');
     Route::delete('notifications', [NotificationController::class, 'destroy'])->name('notifications.destroy');
-
-    });
+    Route::post('{model}/{id}/upload', [MediaController::class, 'store'])->name('media.upload');
+    Route::get('{mediaItem}/download', [MediaController::class, 'download'])->name('media.download');
+    Route::delete('{model}/{id}/{mediaItem}/delete', [MediaController::class, 'destroy'])->name('media.delete');
+});
 
 
 

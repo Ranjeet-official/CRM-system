@@ -9,27 +9,37 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
+
+
     public function index()
     {
-        $withDeleted = null;
+        $withDeleted = request('deleted') === 'true';
+        $search = request('search');
 
-        if (request('deleted') === 'true') {
-            $withDeleted = true;
+        $users = User::query()
+
+            ->when($withDeleted, function ($query) {
+                $query->onlyTrashed();
+            })
+
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('first_name', 'LIKE', '%' . $search . '%')
+                        ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                        ->orWhere('email', 'LIKE', '%' . $search . '%');
+                });
+            })
+
+            ->with('roles')
+            ->paginate(10)
+            ->withQueryString();
+
+        if (request()->ajax()) {
+            return view('users.table', compact('users', 'withDeleted'))->render();
         }
 
-            $users = User::query()
-                ->when($withDeleted, function ($query) {
-                    return $query->onlyTrashed();
-                })
-            ->with('roles')
-            ->paginate(20);
-
-        return view('users.index', [
-            'users' => $users,
-            'withDeleted' => $withDeleted,
-        ]);
+        return view('users.index', compact('users', 'withDeleted'));
     }
-
     public function create()
     {
         $roles = Role::all();
@@ -43,20 +53,19 @@ class UserController extends Controller
     {
         $user = User::create($request->validated());
 
-        if ($request->has('terms_accepted')) {
-            $user->terms_accepted_at = now();
-            $user->save();
-        }
+        $user->save();
 
         if ($request->has('role')) {
             $user->syncRoles($request->role);
         }
 
-        return redirect()->route('users.index')->with('status','User created successfully');
+        return redirect()->route('users.index')->with('status', 'User created successfully');
     }
 
-    public function edit(User $user)
+    public function edit($id)
     {
+        $user = User::withTrashed()->findOrFail($id);
+
         $roles = Role::all();
         $user->load('roles');
 
@@ -84,18 +93,35 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        $user->delete();
+        $user->delete(); // soft delete
 
-        return redirect()->route('users.index')->with('status','User deleted successfully');
+        return response()->json([
+            'success' => true,
+            'message' => 'User deleted successfully'
+        ]);
     }
 
 
+    // Restore
     public function restore($id)
     {
         $user = User::withTrashed()->findOrFail($id);
-
         $user->restore();
 
-        return redirect()->route('users.index')->with('status','User restored successfully');
+        return response()->json([
+            'success' => true,
+            'message' => 'User restored successfully'
+        ]);
+    }
+    // Permanent Delete
+    public function forceDelete($id)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+        $user->forceDelete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User permanently deleted'
+        ]);
     }
 }

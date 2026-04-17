@@ -1,5 +1,4 @@
-<x-app-layout>
-    <x-slot name="header">
+@section('content')    <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">Users</h2>
     </x-slot>
 
@@ -70,4 +69,13 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+@endsection
+
+
+Ranjit
+
+Project-Name = CRM System
+Task-Name = API Postman
+Description = Worked on Laravel API CRUD (Create, Read, Update, Delete)
+              operations with validation, pagination, and
+               search functionality. Tested APIs using Postman.

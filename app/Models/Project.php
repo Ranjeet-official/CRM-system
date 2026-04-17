@@ -10,15 +10,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 // use Illuminate\Database\Eloquent\SoftDeletes;
-// use Spatie\MediaLibrary\HasMedia;
-// use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
-class Project extends Model
+class Project extends Model implements HasMedia
 {
     /** @use HasFactory<\Database\Factories\ProjectFactory> */
     use HasFactory;
-
-    // use InteractsWithMedia;
+    use LogsActivity;
+    use InteractsWithMedia;
     // use SoftDeletes;
 
     protected $fillable = [
@@ -59,5 +61,15 @@ class Project extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('project')
+            ->logOnly(['title', 'status'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn($event) => "Project {$event}");
     }
 }

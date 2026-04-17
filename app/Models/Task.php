@@ -9,15 +9,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-// use Spatie\MediaLibrary\HasMedia;
-// use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
-class Task extends Model
+class Task extends Model implements HasMedia
 {
     /** @use HasFactory<\Database\Factories\TaskFactory> */
     use HasFactory;
+    use LogsActivity;
 
-    // use InteractsWithMedia;
+    use InteractsWithMedia;
     use SoftDeletes;
 
     protected $fillable = [
@@ -60,5 +63,16 @@ class Task extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('task')
+            ->logOnly(['title', 'status', 'user_id'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn($event) => "Task {$event}");
     }
 }

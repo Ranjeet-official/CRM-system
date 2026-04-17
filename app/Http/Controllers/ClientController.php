@@ -14,13 +14,27 @@ class ClientController extends Controller
      */
     public function index()
     {
-        $clients = Client::paginate(5);
+        $search = request('search');
 
-        return view('clients.index',[
-            'clients' => $clients,
-        ]);
+        $clients = Client::query()
 
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
 
+                    $q->where('contact_name', 'LIKE', '%' . $search . '%')
+                        ->orWhere('contact_email', 'LIKE', '%' . $search . '%')
+                        ->orWhere('contact_phone_number', 'LIKE', '%' . $search . '%');
+                });
+            })
+
+            ->paginate(10)
+            ->withQueryString();
+
+        if (request()->ajax()) {
+            return view('clients.table', compact('clients'))->render();
+        }
+
+        return view('clients.index', compact('clients'));
     }
 
     /**
@@ -28,8 +42,7 @@ class ClientController extends Controller
      */
     public function create()
     {
-      return view('clients.create');
-
+        return view('clients.create');
     }
 
     /**
@@ -37,11 +50,11 @@ class ClientController extends Controller
      */
     public function store(ClientStoreRequest $request)
     {
-         Client::create($request->validated());
+        Client::create($request->validated());
 
         //  dd($request->validated());
 
-         return redirect()->route('clients.index')->with('success','Client Create Successfully');
+        return redirect()->route('clients.index')->with('success', 'Client Create Successfully');
     }
 
     /**
@@ -69,7 +82,7 @@ class ClientController extends Controller
     {
         $client->update($request->validated());
 
-         return redirect()->route('clients.index')->with('success','Client Create Successfully');
+        return redirect()->route('clients.index')->with('success', 'Client Create Successfully');
     }
 
 
@@ -80,6 +93,8 @@ class ClientController extends Controller
     {
         $client->delete();
 
-        return redirect()->route('clients.index')->with('success', 'Client deleted!');
+        return response()->json([
+            'message' => 'Client deleted successfully'
+        ]);
     }
 }

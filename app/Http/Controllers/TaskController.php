@@ -14,23 +14,52 @@ use App\Notifications\TaskAssigned;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 
 class TaskController extends Controller
 {
-    public function index(): View
+    public function index()
     {
-        $query = Task::with(['user', 'client', 'project'])
-            ->filterStatus(request('status'));
+        $search = request('search');
+
+        $query = Task::with(['user', 'client', 'project']);
 
         if (!auth()->user()->hasRole('admin')) {
             $query->where('user_id', auth()->id());
         }
 
-        $tasks = $query->paginate(20);
+        if ($search) {
+            $query->where(function ($q) use ($search) {
 
-        return view('tasks.index', ['tasks' => $tasks]);
+                // main fields
+                $q->where('title', 'LIKE', "%$search%")
+                    ->orWhere('description', 'LIKE', "%$search%")
+
+                    // ✅ client (correct column)
+                    ->orWhereHas('client', function ($c) use ($search) {
+                        $c->where('contact_name', 'LIKE', "%$search%");
+                    })
+
+                    // ✅ project
+                    ->orWhereHas('project', function ($p) use ($search) {
+                        $p->where('title', 'LIKE', "%$search%");
+                    })
+
+                    ->orWhereHas('user', function ($u) use ($search) {
+                        $u->where('first_name', 'LIKE', "%$search%")
+                            ->orWhere('last_name', 'LIKE', "%$search%");
+                    });
+            });
+        }
+
+        $tasks = $query->paginate(10)->withQueryString();
+
+        // 🔥 AJAX
+        if (request()->ajax()) {
+            return view('tasks.table', compact('tasks'))->render();
+        }
+
+        return view('tasks.index', compact('tasks'));
     }
 
     public function create(): View
@@ -50,13 +79,20 @@ class TaskController extends Controller
 
     public function store(StoreTaskRequest $request): RedirectResponse
     {
+        // RULE 1: project must be OPEN
+        $project = Project::find($request->project_id);
+
+        if ($project->status !== \App\Enums\ProjectStatus::OPEN) {
+            return redirect()->back()->with('error', 'Project must be OPEN to assign task');
+        }
+
         $task = Task::create($request->validated());
+
         $user = User::find($request->user_id);
 
         if ($user && $user->id !== auth()->id()) {
             $user->notify(new TaskAssigned($task));
         }
-
 
         return redirect()->route('tasks.index')->with('status', 'Task created successfully');
     }
@@ -90,11 +126,20 @@ class TaskController extends Controller
 
     public function update(UpdateTaskRequest $request, Task $task): RedirectResponse
     {
+        $project = $task->project;
+
+        // RULE 1: project must be OPEN to assign
+        if ($request->user_id && $project->status !== \App\Enums\ProjectStatus::OPEN) {
+            return redirect()->back()->with('error', 'Cannot assign task because project is not OPEN');
+        }
+
+        // RULE 2: must be assigned to complete
+        if ($request->status === TaskStatus::COMPLETED->value && !$request->user_id) {
+            return redirect()->back()->with('error', 'Task must be assigned before completing');
+        }
+
         if ($task->user_id !== $request->user_id) {
             $user = User::find($request->user_id);
-
-            // $user->notify(new TaskAssigned($task));
-            // Mail::to($user)->send(new MailTaskAssigned($task));
         }
 
         $task->update($request->validated());
@@ -103,18 +148,12 @@ class TaskController extends Controller
             ->with('status', 'Task updated successfully');
     }
 
-    public function destroy(Task $task): RedirectResponse
+    public function destroy(Task $task)
     {
-        abort_if(Gate::denies('delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $task->delete();
 
-        try {
-            $task->delete();
-        } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() === '23000') {
-                return redirect()->back()->with('status', 'Task belongs to project. Cannot delete.');
-            }
-        }
-
-        return redirect()->route('tasks.index')->with('status', 'Task deleted successfully');
+        return response()->json([
+            'message' => 'Task deleted successfully'
+        ]);
     }
 }

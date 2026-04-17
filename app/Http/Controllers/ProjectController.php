@@ -3,29 +3,57 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ProjectStatus;
+use App\Enums\TaskStatus;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Models\Client;
 use App\Models\Project;
 use App\Models\User;
-// use App\Notifications\ProjectAssigned;
+use App\Notifications\ProjectAssigned;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
+
 
 class ProjectController extends Controller
 {
 
     public function index()
     {
-        $query = Project::with(['client', 'user']);
+        $search = request('search');
 
-        if (!auth()->user()->hasRole('admin')) {
-            $query->where('user_id', auth()->id());
+        $query = Project::with(['client', 'user'])
+
+            ->when(!auth()->user()->hasRole('admin'), function ($q) {
+                $q->where('user_id', auth()->id());
+            })
+
+            ->when($search, function ($q) use ($search) {
+
+                $q->where(function ($sub) use ($search) {
+
+                    $sub->where('title', 'LIKE', '%' . $search . '%')
+                        ->orWhere('description', 'LIKE', '%' . $search . '%')
+
+                        ->orWhereHas('client', function ($c) use ($search) {
+                            $c->where('contact_name', 'LIKE', '%' . $search . '%')
+                                ->orWhere('contact_email', 'LIKE', '%' . $search . '%');
+                        })
+
+                        ->orWhereHas('user', function ($u) use ($search) {
+                            $u->where('first_name', 'LIKE', '%' . $search . '%')
+                                ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                                ->orWhere('email', 'LIKE', '%' . $search . '%');
+                        });
+                });
+            });
+
+        $projects = $query->paginate(20)->withQueryString();
+
+        if (request()->ajax()) {
+            return view('projects.table', compact('projects'))->render();
         }
 
-        $projects = $query->paginate(20);
-
-        return view('projects.index', ['projects' => $projects]);
+        return view('projects.index', compact('projects'));
     }
 
 
@@ -78,38 +106,46 @@ class ProjectController extends Controller
         ]);
     }
 
+
+
     public function update(UpdateProjectRequest $request, Project $project)
     {
-        if ($project->user_id !== $request->user_id) {
-            // notification logic (optional)
-        }
+        // Step 1: old status
+        $oldStatus = $project->status;
 
-        // ✅ Update project
+        // Step 2: update project
         $project->update($request->validated());
 
-        // 🔥 If project cancelled → cancel all tasks
-        if ($project->status === 'cancelled') {
+        // Step 3: if project CLOSED → close active tasks
+        if ($oldStatus !== ProjectStatus::CLOSED && $project->status === ProjectStatus::CLOSED) {
+
+            $project->tasks()
+                ->whereIn('status', [
+                    TaskStatus::OPEN->value,
+                    TaskStatus::IN_PROGRESS->value
+                ])
+                ->update([
+                    'status' => TaskStatus::COMPLETED->value
+                ]);
+        }
+
+        // Step 4: if project CANCELLED → cancel all tasks
+        if ($oldStatus !== ProjectStatus::CANCELLED && $project->status === ProjectStatus::CANCELLED) {
+
             $project->tasks()->update([
-                'status' => 'cancelled'
+                'status' => TaskStatus::CANCELLED->value
             ]);
         }
 
         return redirect()->route('projects.index')
             ->with('status', 'Project updated successfully');
     }
-
     public function destroy(Project $project)
     {
-        abort_if(Gate::denies('delete'), Response::HTTP_FORBIDDEN, '403 Forbidden');
+        $project->delete();
 
-        try {
-            $project->delete();
-        } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() === '23000') {
-                return redirect()->back()->with('status', 'Project belongs to task. Cannot delete.');
-            }
-        }
-
-        return redirect()->route('projects.index');
+        return response()->json([
+            'message' => 'Project deleted successfully'
+        ]);
     }
 }

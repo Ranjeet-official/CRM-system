@@ -1,185 +1,216 @@
-<x-app-layout>
-    <div
-        class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
-        <!-- Table Header with Search -->
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200">Users</h3>
-            </div>
-        </div>
+@extends('layouts.app')
 
-        <!-- Action Buttons -->
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex flex-wrap gap-2">
-                <x-button type="primary" tag="a" href="{{ route('users.create') }}">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Add User
-                </x-button>
-            </div>
-        </div>
+@section('content')
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700">
 
-        @if ($withDeleted)
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                <div class="flex flex-wrap gap-2">
-                    <x-button type="primary" tag="a" href="{{ route('users.index') }}">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 border-b dark:border-gray-700">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                Users
+            </h2>
+
+            <x-button type="primary" tag="a" href="{{ route('users.create') }}">
+                + Add User
+            </x-button>
+        </div>
+        <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+
+            <!-- LEFT SIDE (BUTTON) -->
+            <div>
+                @if ($withDeleted)
+                    <x-button type="primary" tag="a" class="w-auto" href="{{ route('users.index') }}">
                         Show All Users
                     </x-button>
-                </div>
-            </div>
-        @else
-            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
-                <div class="flex flex-wrap gap-2">
-                    <x-button type="primary" tag="a" href="{{ route('users.index', ['deleted' => 'true']) }}">
+                @else
+                    <x-button type="primary" tag="a" class="w-auto"
+                        href="{{ route('users.index', ['deleted' => 'true']) }}">
                         Show Deleted Users
                     </x-button>
-                </div>
+                @endif
             </div>
-        @endif
+
+            <!-- RIGHT SIDE (SEARCH) -->
+            <div>
+                <input type="text" id="search" placeholder="Search users..."
+                    class="w-full md:w-64 px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-white">
+            </div>
+
+        </div>
+
 
         <!-- Table -->
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-800/80">
+            <table class="w-full table-fixed border-collapse">
+
+                <!-- Head -->
+                <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase text-gray-500 dark:text-gray-400">
                     <tr>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <div class="flex items-center">
-                                Name
-                            </div>
-                        </th>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <div class="flex items-center">
-                                Email
-                            </div>
-                        </th>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <div class="flex items-center">
-                                Role
-                            </div>
-                        </th>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <div class="flex items-center">
-                                Address
-                            </div>
-                        </th>
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <div class="flex items-center">
-                                Phone
-                            </div>
-                        </th>
-
-                        <th scope="col"
-                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <div class="flex items-center">
-                                Terms Accepted
-                            </div>
-                        </th>
-
-                        <th scope="col"
-                            class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Actions
-                        </th>
+                        <th class="px-4 py-3 text-left">Name</th>
+                        <th class="px-4 py-3 text-left">Email</th>
+                        <th class="px-4 py-3 text-left">Role</th>
+                        <th class="px-4 py-3 text-left">Address</th>
+                        <th class="px-4 py-3 text-left">Phone</th>
+                        <th class="px-4 py-3 text-left w-[140px]">Terms</th>
+                        <th class="px-4 py-3 text-right w-[120px]">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    @forelse ($users as $user)
-                        <tr
-                            class="hover:bg-gray-50 dark:hover:bg-gray-700/50 {{ $user->trashed() ? 'bg-red-50 dark:bg-red-800/40' : '' }}">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900 dark:text-gray-100">
-                                    {{ optional($user)->full_name ?? 'Deleted User' }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900 dark:text-gray-100">
-                                    {{ optional($user)->email ?? '-' }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900 dark:text-gray-100">
-                                    {{ $user->roles->pluck('name')->implode(', ') ?? '-' }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900 dark:text-gray-100">
-                                    {{ $user->address ?? '-' }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900 dark:text-gray-100">
-                                    {{ $user->phone_number ?? '-' }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900 dark:text-gray-100">
-                                    {{ $user->terms_accepted_at ? 'Yes' : 'No' }}
-                                </div>
-                            </td>
 
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex justify-end space-x-2">
-                                    @if ($user->trashed())
-                                        {{-- Restore Button --}}
-                                        <form action="{{ route('users.restore', $user->id) }}" method="POST">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit"
-                                                class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">
-                                                Restore
-                                            </button>
-                                        </form>
-                                    @else
-                                        {{-- Edit Button --}}
-                                        <a href="{{ route('users.edit', $user->id) }}"
-                                            class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                                viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                        </a>
-
-                                        {{-- Delete Button --}}
-                                        <form action="{{ route('users.destroy', $user->id) }}" method="POST"
-                                            onsubmit="return confirm('Are you sure you want to delete this user?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button
-                                                class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                                    viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7"
-                                class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
-                                No users found
-                            </td>
-                        </tr>
-                    @endforelse
+                <!-- Body -->
+                <tbody id="userTable" class="divide-y dark:divide-gray-700 text-sm text-gray-900 dark:text-gray-100">
+                    @include('users.table')
                 </tbody>
             </table>
+        </div>
 
-            <div class="mt-4 p-6">
-                {{ $users->links() }}
-            </div>
+        <!-- Pagination -->
+        <div id="pagination">
+            {{ $users->links() }}
         </div>
     </div>
-</x-app-layout>
+@endsection
+@push('scripts')
+    <script>
+        let timer;
+
+        $('#search').on('keyup', function() {
+
+            clearTimeout(timer); // 🔥 debounce reset
+
+            let query = $(this).val();
+
+            timer = setTimeout(function() {
+
+                $.ajax({
+                    url: "{{ route('users.index') }}",
+                    type: "GET",
+                    data: {
+                        search: query
+                    },
+
+                    success: function(response) {
+                        $('#userTable').html(response);
+                    }
+                });
+
+            }, 300); // ⏳ debounce delay
+
+        });
+
+        $(document).on('click', '.deleteBtn', function(e) {
+
+            e.preventDefault();
+
+            if (!confirm('Are you sure you want to delete this user?')) return;
+
+            let form = $(this).closest('form');
+            let row = $(this).closest('tr');
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(),
+
+                success: function(response) {
+
+                    row.fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                    showMessage(response.message, 'warning');
+
+
+                },
+
+                error: function(xhr) {
+                    console.log(xhr.responseText);
+                    alert('Delete failed ');
+                }
+            });
+
+        });
+
+
+        $(document).on('click', '.forceDeleteBtn', function(e) {
+
+            e.preventDefault();
+
+            if (!confirm('Permanently delete this user? ')) return;
+
+            let form = $(this).closest('form');
+            let row = $(this).closest('tr');
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(), // includes _method=DELETE
+
+                success: function(response) {
+
+                    row.fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                    showMessage(response.message, 'error');
+
+
+                },
+
+                error: function(xhr) {
+                    console.log(xhr.responseText);
+                    alert('Permanent delete failed ');
+                }
+            });
+
+        });
+
+        $(document).on('click', '.restoreBtn', function(e) {
+
+            e.preventDefault();
+
+            if (!confirm('Restore this user?')) return;
+
+            let form = $(this).closest('form');
+            let row = $(this).closest('tr');
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(),
+
+                success: function(response) {
+
+                    row.fadeOut(300, function() {
+                        $(this).remove();
+                    });
+
+                    showMessage(response.message, 'success');
+
+
+                },
+
+                error: function(xhr) {
+                    console.log(xhr.responseText);
+                    alert('Restore failed ❌');
+                }
+            });
+
+        });
+
+        function showMessage(message, type = 'success') {
+
+            let box = $('#ajaxMessage');
+
+            // color map (short trick 🔥)
+            const colors = {
+                success: 'bg-green-100 text-green-700',
+                error: 'bg-red-100 text-red-700',
+                warning: 'bg-yellow-100 text-yellow-700'
+            };
+
+            // reset + apply color
+            box.removeClass().addClass(`mb-4 p-3 rounded ${colors[type] || colors.success}`);
+
+            box.text(message).fadeIn();
+
+            setTimeout(() => box.fadeOut(), 3000);
+        }
+    </script>
+@endpush
